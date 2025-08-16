@@ -17,6 +17,8 @@ import AllProducts from "./Pages/AllProducts";
 
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import Wishlist from "./Pages/Wishlist";
+import Cart from "./Pages/Cart";
 
 function App() {
   return (
@@ -78,6 +80,25 @@ function App() {
           element={
             <ProtectedRoute role={["user"]}>
               <AllProducts />
+            </ProtectedRoute>
+          }
+        />
+
+
+         <Route
+          path="/wishlist"
+          element={
+            <ProtectedRoute role={["user"]}>
+              <Wishlist/>
+            </ProtectedRoute>
+          }
+        />
+
+         <Route
+          path="/cart"
+          element={
+            <ProtectedRoute role={["user"]}>
+              <Cart/>
             </ProtectedRoute>
           }
         />

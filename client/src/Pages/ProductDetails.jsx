@@ -1,15 +1,16 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProductById, updateProductById } from '@/Api/productApi';
+import { getProductById, postCart, updateProductById } from '@/Api/productApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { UserContext } from '@/Context/UserContext'; // ✅ Import context
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { UserContext } from '@/Context/UserContext';
 
 const EditProduct = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
-  const { role } = useContext(UserContext); // ✅ Get role
+  const { role, userId } = useContext(UserContext);
 
   const [form, setForm] = useState({
     title: '',
@@ -18,6 +19,9 @@ const EditProduct = () => {
     status: '',
     image: null,
     imagePreview: '',
+    address: '',
+    deliveryMethod: '',
+    paymentMethod: ''
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -34,12 +38,14 @@ const EditProduct = () => {
           status: product.status ?? 'false',
           image: null,
           imagePreview: `http://localhost:8000/${product.image}`,
+          address: product.address || '',
+          deliveryMethod: product.deliveryMethod || '',
+          paymentMethod: product.paymentMethod || ''
         });
       } catch (err) {
         console.error(err);
       }
     };
-
     fetchProduct();
   }, [productId]);
 
@@ -57,12 +63,19 @@ const EditProduct = () => {
     }
   };
 
+  const handleSelectChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData();
     formData.append('title', form.title);
     formData.append('price', form.price);
     formData.append('details', form.details);
+    formData.append('address', form.address);
+    formData.append('deliveryMethod', form.deliveryMethod);
+    formData.append('paymentMethod', form.paymentMethod);
     if (form.image) formData.append('image', form.image);
 
     try {
@@ -74,10 +87,17 @@ const EditProduct = () => {
     }
   };
 
+  const handleAddToCart = async () => {
+    try {
+      await postCart(productId, userId);
+      alert("Added to cart!");
+    } catch (error) {
+      alert("Error adding to cart");
+    }
+  };
+
   const displayStatus = () => {
-    return form.status === 'false' || form.status === false
-      ? 'Pending'
-      : 'Approved';
+    return form.status === 'false' || form.status === false ? 'Pending' : 'Approved';
   };
 
   return (
@@ -108,64 +128,66 @@ const EditProduct = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Status</p>
-                <p className="text-lg font-medium capitalize">
-                  {displayStatus()}
-                </p>
+                <p className="text-lg font-medium capitalize">{displayStatus()}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Address</p>
+                <p className="text-lg font-semibold">{form.address}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Delivery Method</p>
+                <p className="text-lg font-semibold">{form.deliveryMethod}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Payment Method</p>
+                <p className="text-lg font-semibold">{form.paymentMethod}</p>
               </div>
             </>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                name="title"
-                value={form.title}
-                onChange={handleChange}
-                placeholder="Product Title"
-                required
-              />
-              <Input
-                name="price"
-                value={form.price}
-                onChange={handleChange}
-                type="number"
-                placeholder="Product Price"
-                required
-              />
-              <Input
-                name="status"
-                value={form.status}
-                onChange={handleChange}
-                placeholder='Product Status ("false" for Pending, otherwise Approved)'
-                required
-              />
-              <Input
-                name="image"
-                onChange={handleChange}
-                type="file"
-                accept="image/*"
-              />
+              <Input name="title" value={form.title} onChange={handleChange} placeholder="Product Title" required />
+              <Input name="price" value={form.price} onChange={handleChange} type="number" placeholder="Product Price" required />
+              <Input name="status" value={form.status} onChange={handleChange} placeholder='Status ("false" for Pending)' required />
+              <Input name="image" type="file" accept="image/*" onChange={handleChange} />
+
+              {/* New Fields */}
+              <Input name="address" value={form.address} onChange={handleChange} placeholder="Address" required />
+              
+              <Select value={form.deliveryMethod} onValueChange={(value) => handleSelectChange('deliveryMethod', value)} required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Delivery Method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="courier">Courier</SelectItem>
+                  <SelectItem value="pickup">Pickup</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={form.paymentMethod} onValueChange={(value) => handleSelectChange('paymentMethod', value)} required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Payment Method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cod">Cash on Delivery</SelectItem>
+                  <SelectItem value="online">Online Payment</SelectItem>
+                </SelectContent>
+              </Select>
             </form>
           )}
         </div>
       </div>
 
-      {/* Details (Full width) */}
+      {/* Details */}
       <div className="mt-10 text-left">
         <p className="text-sm text-gray-500 mb-1">Details</p>
         {!isEditing ? (
           <p className="text-gray-800 whitespace-pre-wrap">{form.details}</p>
         ) : (
-          <Textarea
-            name="details"
-            value={form.details}
-            onChange={handleChange}
-            placeholder="Product Details"
-            rows={5}
-            required
-          />
+          <Textarea name="details" value={form.details} onChange={handleChange} placeholder="Product Details" rows={5} required />
         )}
       </div>
 
-      {/* Action Buttons at Bottom */}
+      {/* Action Buttons */}
       {role === 'seller' && (
         <div className="mt-6 text-left">
           {!isEditing ? (
@@ -173,15 +195,15 @@ const EditProduct = () => {
           ) : (
             <div className="flex gap-4">
               <Button type="submit" onClick={handleSubmit}>Update</Button>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setIsEditing(false)}
-              >
-                Cancel
-              </Button>
+              <Button type="button" variant="secondary" onClick={() => setIsEditing(false)}>Cancel</Button>
             </div>
           )}
+        </div>
+      )}
+
+      {role === 'user' && (
+        <div className="mt-6 text-left">
+          <Button onClick={handleAddToCart}>Add to Cart</Button>
         </div>
       )}
     </div>

@@ -6,7 +6,7 @@ import { uploadProduct } from "@/Api/productApi";
 import { UserContext } from "../Context/UserContext";
 
 const ProductUpload = () => {
-  const { userName,userId } = useContext(UserContext);
+  const { userName, userId } = useContext(UserContext);
 
   const [data, setData] = useState({
     seller: userName,
@@ -16,7 +16,10 @@ const ProductUpload = () => {
     condition: "",
     status: false,
     details: "",
-    uploaded_by:userId
+    address: "",
+    deliveryMethod: "",
+    paymentMethod: "",
+    uploaded_by: userId
   });
 
   const handleChange = (e) => {
@@ -27,10 +30,10 @@ const ProductUpload = () => {
     }));
   };
 
-  const handleSelectChange = (value) => {
+  const handleSelectChange = (field, value) => {
     setData(prev => ({
       ...prev,
-      condition: value,
+      [field]: value,
     }));
   };
 
@@ -38,19 +41,14 @@ const ProductUpload = () => {
     e.preventDefault();
 
     const formData = new FormData();
-    formData.append("seller", data.seller);
-    formData.append("title", data.title);
-    formData.append("price", data.price);
-    formData.append("condition", data.condition);
-    formData.append("image", data.image);
-    formData.append("status", data.status);
-    formData.append("details", data.details);
-    formData.append("uploaded_by",data.uploaded_by)
+    for (const key in data) {
+      formData.append(key, data[key]);
+    }
 
     try {
       const response = await uploadProduct(formData);
       console.log("Upload successful", response);
-      alert("Uploaded successfully")
+      alert("Uploaded successfully");
     } catch (error) {
       console.log(error);
     }
@@ -78,7 +76,7 @@ const ProductUpload = () => {
           required
         />
 
-        <Select onValueChange={handleSelectChange} required>
+        <Select onValueChange={(value) => handleSelectChange('condition', value)} required>
           <SelectTrigger>
             <SelectValue placeholder="Select condition" />
           </SelectTrigger>
@@ -93,9 +91,7 @@ const ProductUpload = () => {
           type="file"
           id="image"
           name="image"
-          onChange={(e) => {
-            setData(prev => ({ ...prev, image: e.target.files[0] }));
-          }}
+          onChange={(e) => setData(prev => ({ ...prev, image: e.target.files[0] }))}
           required
         />
 
@@ -109,6 +105,36 @@ const ProductUpload = () => {
           className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           required
         ></textarea>
+
+        {/* New Fields */}
+        <Input
+          id="address"
+          name="address"
+          value={data.address}
+          onChange={handleChange}
+          placeholder="Your Address"
+          required
+        />
+
+        <Select onValueChange={(value) => handleSelectChange('deliveryMethod', value)} required>
+          <SelectTrigger>
+            <SelectValue placeholder="Select Delivery Method" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="courier">Courier</SelectItem>
+            <SelectItem value="pickup">Pickup</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select onValueChange={(value) => handleSelectChange('paymentMethod', value)} required>
+          <SelectTrigger>
+            <SelectValue placeholder="Select Payment Method" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="cod">Cash on Delivery</SelectItem>
+            <SelectItem value="online">Online Payment</SelectItem>
+          </SelectContent>
+        </Select>
 
         <Button type="submit">Upload Product</Button>
       </form>
